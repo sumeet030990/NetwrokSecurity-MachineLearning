@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 
 from networksecurity.components.push_data import NetworkDataExtract
+from networksecurity.components.data_ingestion import DataIngestion
+from networksecurity.entity.config_entity import TrainingPipelineConfig, DataIngestionConfig
+
 app = Flask(__name__)
 
 
@@ -11,7 +14,7 @@ Step1: insert scv data in mongo db
 '''
 @app.route('/insert-data-to-mongo', methods=['GET'])
 def insert_data_to_mongo():
-  FILE_PATH = "Network_Data/Phishing_Legitimate_full.csv"
+  FILE_PATH = "Network_Data/dataset.csv"
   
   ob = NetworkDataExtract()
   records = ob.convert_csv_to_json(file_path=FILE_PATH)
@@ -30,7 +33,17 @@ def delete_all_records():
   return jsonify({'result':result.deleted_count})
 
 
+'''
+Step2: data ingestion
+'''
+@app.route('/data-ingestion', methods=['GET'])
+def data_ingestion():
+  trainingPipelineConfig =TrainingPipelineConfig()
+  dataIngestionConfig = DataIngestionConfig(trainingPipelineConfig)
+  dataIngestion = DataIngestion(dataIngestionConfig)
+  dataIngestion.initiate_data_ingestion()
 
-
+  return jsonify({'result': 'done'})
+  
 if __name__=="__main__":
     app.run(host="0.0.0.0", debug=True)   
