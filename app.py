@@ -4,7 +4,7 @@ from networksecurity.components.push_data import NetworkDataExtract
 from networksecurity.components.data_ingestion import DataIngestion
 from networksecurity.components.data_validation import DataValidationConfig,DataValidation
 from networksecurity.entity.config_entity import TrainingPipelineConfig, DataIngestionConfig
-
+from networksecurity.components.data_transformation import DataTransformation, DataTransformationConfig
 app = Flask(__name__)
 
 
@@ -34,21 +34,29 @@ def delete_all_records():
   return jsonify({'result':result.deleted_count})
 
 
-'''
-Step2: data ingestion
-'''
-@app.route('/data-ingestion', methods=['GET'])
+
+@app.route('/process-data', methods=['GET'])
 def data_ingestion():
   trainingPipelineConfig =TrainingPipelineConfig()
+  # Step2: data ingestion
   dataIngestionConfig = DataIngestionConfig(trainingPipelineConfig)
   dataIngestion = DataIngestion(dataIngestionConfig)
   data_ingestion_artifact = dataIngestion.initiate_data_ingestion()
+
+  # Step3: Data Validation
   data_validation_config = DataValidationConfig(trainingPipelineConfig)
   data_validation = DataValidation(data_ingestion_artifact, data_validation_config)
 
   data_validation_artifacts = data_validation.initate_data_validation()
 
-  return jsonify({'data_validation_artifacts': data_validation_artifacts})
-  
+  # Step4: data transformation
+  data_transformation_config = DataTransformationConfig(trainingPipelineConfig)
+  data_transformation = DataTransformation(data_validation_artifacts, data_transformation_config)
+  data_transformation_artifact = data_transformation.initate_data_transformation()
+  return jsonify({
+     'data_validation_artifacts': data_validation_artifacts, 
+     'data_transformation_artifact': data_transformation_artifact
+  })
+
 if __name__=="__main__":
     app.run(host="0.0.0.0", debug=True)   

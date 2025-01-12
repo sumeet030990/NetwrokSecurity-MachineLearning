@@ -2,10 +2,10 @@ import yaml
 import os,sys
 import pickle
 from networksecurity.exception.exception import CustomException
+import numpy as np
 
 def read_yaml_file(file_path:str)->dict:
   try:
-    print(file_path)
     with open(file_path, "rb") as yaml_file:
       return yaml.safe_load(yaml_file)
   except Exception as e:
@@ -23,3 +23,28 @@ def write_yaml_file(file_path:str, content: object, replace: bool = False) -> No
       yaml.dump(content, file)
   except Exception as e:
     raise CustomException(e,sys)
+  
+  '''
+  save numpy array data to file
+  file_path: str lcoation of file to save
+  array: np.array data to save
+  '''
+def save_numpy_array_data(file_path:str, array:np.array):
+  try:
+    dir_path = os.path.dirname(file_path)
+    os.makedirs(dir_path,exist_ok=True)
+
+    with open(file_path, "wb") as file_obj:
+      np.save(file_obj, array)
+  except Exception as e:
+    raise CustomException(e,sys)
+    
+def save_object(file_path:str, obj:object):
+    try:
+      dir_path = os.path.dirname(file_path)
+      os.makedirs(dir_path,exist_ok=True)
+
+      with open(file_path, "wb") as file_obj:
+        pickle.dump(obj, file_obj)
+    except Exception as e:
+      raise CustomException(e,sys)
