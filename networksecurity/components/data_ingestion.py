@@ -1,5 +1,4 @@
 from networksecurity.exception.exception import CustomException
-from networksecurity.logging import logger
 import os
 import sys
 import pandas as pd
@@ -10,7 +9,6 @@ from sklearn.model_selection import train_test_split
 
 from networksecurity.entity.config_entity import DataIngestionConfig
 from networksecurity.entity.artifact_entity import DataIngestionArtifact
-from networksecurity.constants import training_pipeline
 
 from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split

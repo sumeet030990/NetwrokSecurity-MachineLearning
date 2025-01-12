@@ -31,6 +31,7 @@ class NetworkDataExtract():
   def convert_csv_to_json(self,file_path:str):
     try:
       df = pd.read_csv(file_path)
+      df.drop(['index'], axis=1, inplace=True)
       df.reset_index(drop=True, inplace=True)
 
       json_data = df.T.to_json()

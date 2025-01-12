@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 
 from networksecurity.components.push_data import NetworkDataExtract
 from networksecurity.components.data_ingestion import DataIngestion
+from networksecurity.components.data_validation import DataValidationConfig,DataValidation
 from networksecurity.entity.config_entity import TrainingPipelineConfig, DataIngestionConfig
 
 app = Flask(__name__)
@@ -41,9 +42,13 @@ def data_ingestion():
   trainingPipelineConfig =TrainingPipelineConfig()
   dataIngestionConfig = DataIngestionConfig(trainingPipelineConfig)
   dataIngestion = DataIngestion(dataIngestionConfig)
-  dataIngestion.initiate_data_ingestion()
+  data_ingestion_artifact = dataIngestion.initiate_data_ingestion()
+  data_validation_config = DataValidationConfig(trainingPipelineConfig)
+  data_validation = DataValidation(data_ingestion_artifact, data_validation_config)
 
-  return jsonify({'result': 'done'})
+  data_validation_artifacts = data_validation.initate_data_validation()
+
+  return jsonify({'data_validation_artifacts': data_validation_artifacts})
   
 if __name__=="__main__":
     app.run(host="0.0.0.0", debug=True)   
