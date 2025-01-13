@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 
 from networksecurity.components.push_data import NetworkDataExtract
 from networksecurity.components.data_ingestion import DataIngestion
 from networksecurity.components.data_validation import DataValidationConfig,DataValidation
 from networksecurity.entity.config_entity import TrainingPipelineConfig, DataIngestionConfig
 from networksecurity.components.data_transformation import DataTransformation, DataTransformationConfig
+from networksecurity.components.model_trainer import ModelTrainer, ModelTrainingConfig 
 app = Flask(__name__)
 
 
@@ -53,9 +54,15 @@ def data_ingestion():
   data_transformation_config = DataTransformationConfig(trainingPipelineConfig)
   data_transformation = DataTransformation(data_validation_artifacts, data_transformation_config)
   data_transformation_artifact = data_transformation.initate_data_transformation()
+
+  ## Step5: Model train
+  model_training_config = ModelTrainingConfig(trainingPipelineConfig)
+  model_trainer = ModelTrainer(model_trainer_config=model_training_config, data_transformation_artifact=data_transformation_artifact)
+  model_trainer_artifact = model_trainer.initiate_model_trainer()
   return jsonify({
      'data_validation_artifacts': data_validation_artifacts, 
-     'data_transformation_artifact': data_transformation_artifact
+     'data_transformation_artifact': data_transformation_artifact,
+     'model_trainer_artifact':model_trainer_artifact
   })
 
 if __name__=="__main__":

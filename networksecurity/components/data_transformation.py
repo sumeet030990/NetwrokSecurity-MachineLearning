@@ -1,5 +1,4 @@
 from networksecurity.exception.exception import CustomException
-import os
 import sys
 import pandas as pd
 import numpy as np
@@ -9,7 +8,7 @@ from sklearn.pipeline import Pipeline
 
 from networksecurity.constants.training_pipeline import TARGET_COLUMN, DATA_TRANSFORMATION_IMPUTER_PARAMS
 
-from networksecurity.entity.artifact_entity import DataTransformationArtfiact, DataValidationArtifact
+from networksecurity.entity.artifact_entity import DataTransformationArtifact, DataValidationArtifact
 
 from networksecurity.entity.config_entity import DataTransformationConfig
 from networksecurity.utils.main_utils import save_object, save_numpy_array_data
@@ -54,7 +53,7 @@ class DataTransformation:
     except Exception as e:
       raise CustomException(e, sys)
 
-  def initate_data_transformation(self) -> DataTransformationArtfiact:
+  def initate_data_transformation(self) -> DataTransformationArtifact:
     try:
       train_df = DataTransformation.read_data(self.data_validation_artifact.valid_trained_file_path)
       test_df = DataTransformation.read_data(self.data_validation_artifact.valid_test_file_path)
@@ -84,7 +83,7 @@ class DataTransformation:
 
       ## preparing artifacts
 
-      data_transformation_artifact:DataTransformationArtfiact = DataTransformationArtfiact(
+      data_transformation_artifact:DataTransformationArtifact = DataTransformationArtifact(
         tranformed_object_file_path=self.data_transformation_config.transformed_object_file_path,
         tranformed_train_file_path= self.data_transformation_config.transformed_train_file_path,
         tranformed_test_file_path= self.data_transformation_config.transformed_test_file_path
