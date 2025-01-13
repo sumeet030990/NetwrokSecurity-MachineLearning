@@ -1,69 +1,71 @@
-from flask import Flask, jsonify
+import os,sys
+import pandas as pd
+import certifi
+from networksecurity.exception.exception import CustomException
+ca = certifi.where()
 
-from networksecurity.components.push_data import NetworkDataExtract
-from networksecurity.components.data_ingestion import DataIngestion
-from networksecurity.components.data_validation import DataValidationConfig,DataValidation
-from networksecurity.entity.config_entity import TrainingPipelineConfig, DataIngestionConfig
-from networksecurity.components.data_transformation import DataTransformation, DataTransformationConfig
-from networksecurity.components.model_trainer import ModelTrainer, ModelTrainingConfig 
-app = Flask(__name__)
+from dotenv import load_dotenv
+load_dotenv()
 
+from networksecurity.utils.main_utils import load_object, save_object
+from networksecurity.utils.ml_utils.models.estimator import NetworkModel
 
-COLLECTION_NAME = "phishingData"
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, File, UploadFile, Request
+from uvicorn import run as app_run
+from fastapi.responses import Response
+from starlette.responses import RedirectResponse
 
-'''
-Step1: insert scv data in mongo db
-'''
-@app.route('/insert-data-to-mongo', methods=['GET'])
-def insert_data_to_mongo():
-  FILE_PATH = "Network_Data/dataset.csv"
+from networksecurity.pipeline.training_pipeline import TrainingPipeline
+from networksecurity.constants.training_pipeline import FINAL_DIR, PREPROCESSING_OBJECT_FILE_NAME, MODEL_FILE_NAME
+
+app = FastAPI()
+origin=["*"]
+
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins= origin,
+  allow_credentials = True,
+  allow_methods=["*"],
+  allow_headers=["*"]
+)
+
+@app.get("/", tags=["authentication"])
+async def index():
+  return RedirectResponse(url="/docs")
+
+@app.get("/train")
+async def train_route():
+  try:
+    train_pipeline = TrainingPipeline()
+    train_pipeline.run_pipeline()
+
+    return Response("Training is successful")
+  except Exception as e:
+    raise CustomException(e,sys)
+
+@app.post("/predict")
+async def predict(request:Request, file_obj: UploadFile=File(...)):
+  try:
+    df= pd.read_csv(file_obj.file)
+
+    preprocessor_path = os.path.join(FINAL_DIR, PREPROCESSING_OBJECT_FILE_NAME)
+    preprocessor = load_object(file_path=preprocessor_path)
+
+    final_model_path = os.path.join(FINAL_DIR, MODEL_FILE_NAME)
+    final_model = load_object(final_model_path)
+
+    network_model = NetworkModel(preprocessor = preprocessor, model = final_model)
+    y_pred = network_model.predict(df)
+
+    df['predicted_column'] = y_pred
+
+    df.to_csv('input_output/output.csv')
+
+    return Response("Prediction completed: please check: input_output/result.csv")
+  except Exception as e:
+    raise CustomException(e,sys)
   
-  ob = NetworkDataExtract()
-  records = ob.convert_csv_to_json(file_path=FILE_PATH)
-
-  result = ob.insert_data_to_mongo_db(records=records, collection=COLLECTION_NAME)
-
-  return jsonify({'result':result})
-
-'''
-Step1.1: delete all records from mongo db
-'''
-@app.route('/delete-all-records', methods=['DELETE'])
-def delete_all_records():
-  ob = NetworkDataExtract()
-  result = ob.delete_data_from_mongo(collection=COLLECTION_NAME)
-  return jsonify({'result':result.deleted_count})
-
-
-
-@app.route('/process-data', methods=['GET'])
-def data_ingestion():
-  trainingPipelineConfig =TrainingPipelineConfig()
-  # Step2: data ingestion
-  dataIngestionConfig = DataIngestionConfig(trainingPipelineConfig)
-  dataIngestion = DataIngestion(dataIngestionConfig)
-  data_ingestion_artifact = dataIngestion.initiate_data_ingestion()
-
-  # Step3: Data Validation
-  data_validation_config = DataValidationConfig(trainingPipelineConfig)
-  data_validation = DataValidation(data_ingestion_artifact, data_validation_config)
-
-  data_validation_artifacts = data_validation.initate_data_validation()
-
-  # Step4: data transformation
-  data_transformation_config = DataTransformationConfig(trainingPipelineConfig)
-  data_transformation = DataTransformation(data_validation_artifacts, data_transformation_config)
-  data_transformation_artifact = data_transformation.initate_data_transformation()
-
-  ## Step5: Model train
-  model_training_config = ModelTrainingConfig(trainingPipelineConfig)
-  model_trainer = ModelTrainer(model_trainer_config=model_training_config, data_transformation_artifact=data_transformation_artifact)
-  model_trainer_artifact = model_trainer.initiate_model_trainer()
-  return jsonify({
-     'data_validation_artifacts': data_validation_artifacts, 
-     'data_transformation_artifact': data_transformation_artifact,
-     'model_trainer_artifact':model_trainer_artifact
-  })
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0", debug=True)   
+  app_run(app,host="localhost", port=8000)   
