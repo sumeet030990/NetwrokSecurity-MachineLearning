@@ -18,6 +18,7 @@ defining common constant variable for training pipeline
 TARGET_COLUMN = "Result"
 PIPELINE_NAME="NetworkSecurity"
 ARTIFACT_DIR="Artifacts"
+FINAL_DIR="final_model"
 FILE_NAME="dataset.csv"
 
 TRAIN_FILE_NAME="train.csv"

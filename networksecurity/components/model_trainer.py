@@ -16,7 +16,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier, RandomForestClassifier
 import mlflow   
-
+from networksecurity.constants.training_pipeline import FINAL_DIR, MODEL_FILE_NAME, PREPROCESSING_OBJECT_FILE_NAME
 
 class ModelTrainer:
   def __init__(self, model_trainer_config: ModelTrainingConfig, data_transformation_artifact: DataTransformationArtifact):
@@ -99,6 +99,7 @@ class ModelTrainer:
     ## track the mlflow
     self.track_mlflow(best_model,classification_test_metrics)
 
+
     preprocessor = load_object(file_path=self.data_transformation_artifact.tranformed_object_file_path)
 
     model_dir_path = os.path.dirname(self.model_trainer_config.trained_model_file_path)
@@ -106,6 +107,13 @@ class ModelTrainer:
 
     networkModel = NetworkModel(preprocessor=preprocessor, model=best_model)
     save_object(self.model_trainer_config.trained_model_file_path, obj=networkModel)
+
+    ## save this new best model & preprocessor as final model and preprocessor for final predictions
+    os.makedirs(FINAL_DIR, exist_ok= True)
+    final_model_file = os.path.join(FINAL_DIR,MODEL_FILE_NAME)
+    final_preprocessor_file = os.path.join(FINAL_DIR,PREPROCESSING_OBJECT_FILE_NAME)
+    save_object(final_model_file, best_model)
+    save_object(final_preprocessor_file, preprocessor)
 
     # Model Trainer Artifact
     model_trainer_artifact =  ModelTrainerArtifact(trained_model_file_path=self.model_trainer_config.trained_model_file_path, train_metric_artifact=classification_train_metrics, test_metric_artifact= classification_test_metrics)
