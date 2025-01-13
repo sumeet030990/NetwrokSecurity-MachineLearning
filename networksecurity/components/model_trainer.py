@@ -5,6 +5,8 @@ import sys
 from networksecurity.entity.config_entity import ModelTrainingConfig
 from networksecurity.utils.main_utils import save_object, load_object, load_numpy_array_data, evaluate_models
 from networksecurity.utils.ml_utils.metrics.classification_metric import get_classification_score
+from networksecurity.entity.artifact_entity import ClassificationMetricArtifact
+ 
 from networksecurity.utils.ml_utils.models.estimator import NetworkModel
 
 from networksecurity.entity.artifact_entity import DataTransformationArtifact, ModelTrainerArtifact
@@ -13,12 +15,29 @@ from networksecurity.entity.artifact_entity import DataTransformationArtifact, M
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier, RandomForestClassifier
+import mlflow   
+
 
 class ModelTrainer:
   def __init__(self, model_trainer_config: ModelTrainingConfig, data_transformation_artifact: DataTransformationArtifact):
     try:
       self.model_trainer_config = model_trainer_config
       self.data_transformation_artifact = data_transformation_artifact
+    except Exception as e:
+      raise CustomException(e, sys)
+  
+  def track_mlflow(self, best_model,classification_test_metrics:ClassificationMetricArtifact):
+    try:
+      with mlflow.start_run():
+        f1_score = classification_test_metrics.f1_score
+        precision_score = classification_test_metrics.precision_score
+        recall_score = classification_test_metrics.recall_score
+
+        mlflow.log_metric("f1_score", f1_score)
+        mlflow.log_metric("precision_score", precision_score)
+        mlflow.log_metric("recall_score", recall_score)
+        mlflow.sklearn.log_model(best_model, "best_model")
+
     except Exception as e:
       raise CustomException(e, sys)
   
@@ -75,6 +94,10 @@ class ModelTrainer:
     y_test_pred = best_model.predict(x_test)
 
     classification_test_metrics = get_classification_score(y_true=y_test, y_pred=y_test_pred)
+    
+
+    ## track the mlflow
+    self.track_mlflow(best_model,classification_test_metrics)
 
     preprocessor = load_object(file_path=self.data_transformation_artifact.tranformed_object_file_path)
 
